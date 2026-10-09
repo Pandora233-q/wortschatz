@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WORTSCHATZ · 背单词</title>
+<style>
+  /* ============ 瑞士风格 / Swiss Style ============ */
+  :root{
+    --red:#E30613;
+    --black:#111111;
+    --grey:#6E6E6E;
+    --line:#DADADA;
+    --bg:#FFFFFF;
+    --soft:#F4F4F4;
+    --blue:#0055A4;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    font-family:"Helvetica Neue",Helvetica,Arial,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    background:var(--bg);
+    color:var(--black);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;letter-spacing:.02em;}
+
+  /* ---- 顶部网格头 ---- */
+  header{
+    display:grid;
+    grid-template-columns:1fr auto;
+    align-items:end;
+    padding:28px 32px 20px;
+    border-bottom:1px solid var(--black);
+  }
+  .brand{font-size:12px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;}
+  .brand b{color:var(--red);}
+  .title{
+    font-size:clamp(32px,6vw,64px);
+    font-weight:700;
+    letter-spacing:-0.02em;
+    line-height:.95;
+    text-transform:uppercase;
+    margin-top:8px;
+  }
+  .title span{color:var(--red);}
+  .meta{
+    text-align:right;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--grey);
+  }
+  .meta strong{display:block;font-size:28px;color:var(--black);letter-spacing:0;font-weight:700;}
+
+  /* ---- 导航 ---- */
+  nav{
+    display:flex;
+    border-bottom:1px solid var(--black);
+  }
+  nav button{
+    appearance:none;border:none;background:none;cursor:pointer;
+    font:inherit;font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+    padding:14px 32px;
+    border-right:1px solid var(--black);
+    color:var(--grey);
+    transition:background .15s,color .15s;
+  }
+  nav button.active{background:var(--black);color:#fff;}
+  nav button:not(.active):hover{background:var(--soft);color:var(--black);}
+  nav .hint{
+    margin-left:auto;align-self:center;
+    padding:0 32px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--grey);
+  }
+
+  section{display:none;}
+  section.show{display:block;}
+
+  /* ---- 通用版式：12列网格 ---- */
+  .grid12{
+    display:grid;grid-template-columns:repeat(12,1fr);
+    border-bottom:1px solid var(--line);
+  }
+  .col-label{
+    grid-column:span 12;
+    font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+    padding:16px 32px 8px;color:var(--grey);
+  }
+  .cell{border-top:1px solid var(--line);border-right:1px solid var(--line);padding:20px 32px;min-height:80px;}
+  .cell:nth-child(odd of .cell){}
+  .c4{grid-column:span 4;} .c6{grid-column:span 6;} .c8{grid-column:span 8;} .c12{grid-column:span 12;}
+
+  h2{font-size:20px;font-weight:700;letter-spacing:-0.01em;text-transform:uppercase;margin-bottom:10px;}
+  p.small{font-size:13px;color:var(--grey);max-width:56ch;}
+  code{background:var(--soft);padding:1px 5px;font-size:12px;}
+
+  /* ---- 表单控件 ---- */
+  label{display:block;font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--grey);margin-bottom:6px;}
+  textarea,input[type=text],input[type=number],input[type=file]{
+    width:100%;font:inherit;font-size:14px;
+    border:1px solid var(--black);background:#fff;padding:10px 12px;border-radius:0;
+    outline:none;
+  }
+  textarea{min-height:150px;resize:vertical;line-height:1.7;}
+  textarea:focus,input:focus{border-color:var(--red);box-shadow:0 0 0 1px var(--red);}
+  .btn{
+    appearance:none;cursor:pointer;font:inherit;
+    font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+    border:1px solid var(--black);background:var(--black);color:#fff;
+    padding:12px 26px;border-radius:0;
+    transition:background .15s,color .15s;
+  }
+  .btn:hover{background:var(--red);border-color:var(--red);}
+  .btn.ghost{background:#fff;color:var(--black);}
+  .btn.ghost:hover{background:var(--black);color:#fff;}
+  .btn:disabled{opacity:.35;cursor:not-allowed;}
+  .btn:disabled:hover{background:var(--black);border-color:var(--black);}
+  .btn.danger:hover{background:var(--red);border-color:var(--red);}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:14px;}
+
+  /* ---- 词库表 ---- */
+  .dict-head,.dict-row{
+    display:grid;grid-template-columns:52px 1.4fr .6fr 1.6fr 110px 90px 40px;
+    gap:0;align-items:center;
+    padding:0 32px;
+  }
+  .dict-head{
+    border-bottom:1px solid var(--black);
+    font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--grey);
+    padding-top:10px;padding-bottom:10px;
+  }
+  .dict-row{border-bottom:1px solid var(--line);font-size:14px;padding-top:10px;padding-bottom:10px;}
+  .dict-row:hover{background:var(--soft);}
+  .dict-row .en{font-weight:700;}
+  .dict-row .pos{color:var(--grey);font-size:12px;}
+  .streakbar{height:6px;background:var(--soft);position:relative;overflow:hidden;}
+  .streakbar i{position:absolute;left:0;top:0;bottom:0;background:var(--red);}
+  .del{
+    appearance:none;border:none;background:none;cursor:pointer;
+    font-size:16px;color:var(--grey);line-height:1;padding:4px;
+  }
+  .del:hover{color:var(--red);}
+  .empty{padding:60px 32px;text-align:center;color:var(--grey);font-size:13px;letter-spacing:.1em;text-transform:uppercase;}
+
+  /* ---- 复习 ---- */
+  .stage{padding:48px 32px 64px;}
+  .qcard{max-width:720px;margin:0 auto;}
+  .q-meta{
+    display:flex;justify-content:space-between;
+    font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--grey);
+    border-bottom:1px solid var(--black);padding-bottom:10px;margin-bottom:36px;
+  }
+  .q-prompt{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--red);margin-bottom:12px;}
+  .q-word{
+    font-size:clamp(36px,7vw,72px);font-weight:700;letter-spacing:-0.02em;line-height:1.05;
+    text-transform:none;word-break:break-word;
+  }
+  .q-word .pos-inline{font-size:16px;font-weight:400;color:var(--grey);letter-spacing:.1em;margin-left:14px;vertical-align:middle;}
+  .q-input{margin-top:36px;display:flex;gap:0;}
+  .q-input input{
+    flex:1;font-size:20px;padding:16px 18px;border:1px solid var(--black);border-right:none;
+  }
+  .q-input input:focus{border-color:var(--red);}
+  .q-input .btn{padding:16px 34px;font-size:14px;}
+  .q-feedback{
+    margin-top:18px;min-height:44px;font-size:15px;font-weight:700;letter-spacing:.02em;
+  }
+  .q-feedback.ok{color:var(--blue);}
+  .q-feedback.bad{color:var(--red);}
+  .q-progress{display:flex;gap:4px;margin-top:24px;flex-wrap:wrap;}
+  .q-progress i{width:26px;height:8px;background:var(--soft);display:block;}
+  .q-progress i.done{background:var(--red);}
+  .review-setup{max-width:720px;margin:0 auto;}
+
+  /* ---- 设置 ---- */
+  .set-num{
+    font-size:56px;font-weight:700;width:130px;text-align:center;padding:8px;
+  }
+  .toast{
+    position:fixed;left:50%;bottom:32px;transform:translateX(-50%) translateY(20px);
+    background:var(--black);color:#fff;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    padding:12px 24px;opacity:0;pointer-events:none;transition:all .25s;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .toast.red{background:var(--red);}
+
+  /* ---- 开关 Toggle ---- */
+  .toggle{display:flex;align-items:center;gap:14px;cursor:pointer;margin-top:18px;user-select:none;}
+  .toggle input{position:absolute;opacity:0;pointer-events:none;}
+  .toggle .track{
+    width:56px;height:28px;border:1px solid var(--black);background:#fff;position:relative;flex:none;
+    transition:background .15s;
+  }
+  .toggle .track::after{
+    content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;background:var(--black);
+    transition:left .15s,background .15s;
+  }
+  .toggle input:checked + .track{background:var(--red);border-color:var(--red);}
+  .toggle input:checked + .track::after{left:31px;background:#fff;}
+  .toggle .t-label{font-size:13px;font-weight:700;letter-spacing:.06em;}
+
+  footer{
+    padding:20px 32px;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--grey);
+    display:flex;justify-content:space-between;border-top:1px solid var(--black);
+  }
+
+  @media (max-width:760px){
+    header{padding:20px;padding-bottom:14px;}
+    nav button{padding:12px 16px;}
+    nav .hint{display:none;}
+    .c4,.c6,.c8{grid-column:span 12;}
+    .dict-head{display:none;}
+    .dict-row{grid-template-columns:1fr auto;row-gap:2px;}
+    .dict-row .hide-m{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="brand">WORT<b>SCHATZ</b> — 背单词工具 / V.1.0</div>
+    <div class="title">Wort<span>schatz</span></div>
+  </div>
+  <div class="meta">
+    本地词库
+    <strong id="statCount">0</strong>
+    个词条
+  </div>
+</header>
+
+<nav>
+  <button data-tab="dict" class="active">词库 / Wörter</button>
+  <button data-tab="review">复习 / Lernen</button>
+  <button data-tab="settings">设置 / Einstellungen</button>
+  <span class="hint" id="navHint">GRID · HELVETICA · RED</span>
+</nav>
+
+<!-- ============ 词库 ============ -->
+<section id="tab-dict" class="show">
+  <div class="grid12">
+    <div class="col-label">01 — 导入 / Import</div>
+    <div class="cell c8">
+      <h2>粘贴单词列表</h2>
+      <p class="small">每行一个词条：<code>英文 / 词组 [词性] 中文</code>（词性选填）。支持多词词组，可用逗号或制表符分隔。<br>示例：<code>abandon v. 放弃</code>　<code>give up 放弃</code>　<code>take care of v. 照顾</code>　<code>as a matter of fact 事实上</code></p>
+      <textarea id="bulkText" placeholder="abandon v. 放弃&#10;give up 放弃&#10;take care of v. 照顾&#10;breakthrough 突破"></textarea>
+      <div class="row">
+        <button class="btn" id="btnImport">导入 Import</button>
+        <span class="small" id="importMsg" style="font-size:12px;color:var(--grey);"></span>
+      </div>
+    </div>
+    <div class="cell c4">
+      <h2>文件上传</h2>
+      <p class="small">支持 .txt / .csv 文件，格式与左侧相同，每行一词。</p>
+      <input type="file" id="fileInput" accept=".txt,.csv">
+      <div class="row">
+        <button class="btn danger ghost" id="btnClearAll">清空词库</button>
+        <button class="btn ghost" id="btnExport">导出</button>
+      </div>
+      <p class="small" style="margin-top:14px;">数据保存在浏览器 localStorage，不上传任何服务器。</p>
+    </div>
+  </div>
+
+  <div class="col-label" style="padding:16px 32px 8px;font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--grey);">02 — 词表 / Liste</div>
+  <div class="dict-head">
+    <div>#</div><div>English</div><div>词性</div><div>中文释义</div><div>连续答对</div><div>进度</div><div></div>
+  </div>
+  <div id="dictList"></div>
+</section>
+
+<!-- ============ 复习 ============ -->
+<section id="tab-review">
+  <div class="stage" id="reviewStage"></div>
+</section>
+
+<!-- ============ 设置 ============ -->
+<section id="tab-settings">
+  <div class="grid12">
+    <div class="col-label">设置 / Einstellungen</div>
+    <div class="cell c6">
+      <h2>掌握阈值 N</h2>
+      <p class="small">一个词条需要<b>连续</b>答对 N 次后，才会从词库中自动删除（视为已掌握）。答错会清零连对计数。</p>
+      <input type="number" class="set-num" id="setN" min="1" max="99" value="3">
+      <div class="row"><button class="btn" id="btnSaveN">保存设置</button></div>
+    </div>
+    <div class="cell c6">
+      <h2>显示方向</h2>
+      <p class="small">复习时随机显示英文或中文，由你填写对应的另一种。此比例为 50 / 50，不可更改。</p>
+      <label class="toggle" style="margin-top:22px;">
+        <input type="checkbox" id="toggleBlockCN">
+        <span class="track"></span>
+        <span class="t-label">英文作答时屏蔽中文输入</span>
+      </label>
+      <p class="small" style="margin-top:10px;">开启后，题目为「看中文 · 填英文」时，将拦截中文输入法与中文粘贴（仅对此类题目生效）。</p>
+      <p class="small" style="margin-top:14px;">当前已掌握并删除：<b id="statMastered">0</b> 词</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span>WORTSCHATZ — A Swiss-style vocabulary trainer</span>
+  <span id="footTime"></span>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= 数据层 ================= */
+const LS_WORDS = 'ws_words_v1';
+const LS_N     = 'ws_n_v1';
+const LS_DONE  = 'ws_done_v1';
+const LS_BLOCK = 'ws_blockcn_v1';
+
+let words = JSON.parse(localStorage.getItem(LS_WORDS) || '[]');
+let masteredCount = parseInt(localStorage.getItem(LS_DONE) || '0', 10);
+let N = parseInt(localStorage.getItem(LS_N) || '3', 10);
+let blockCN = localStorage.getItem(LS_BLOCK) === '1';
+
+const save = () => {
+  localStorage.setItem(LS_WORDS, JSON.stringify(words));
+  localStorage.setItem(LS_N, String(N));
+  localStorage.setItem(LS_DONE, String(masteredCount));
+  localStorage.setItem(LS_BLOCK, blockCN ? '1' : '0');
+};
+
+const POS_TAGS = new Set(['n.','v.','vt.','vi.','adj.','adv.','prep.','conj.','pron.','num.','art.','int.','abbr.','phr.','modal.']);
+
+const HAS_CJK = /[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/;
+const IS_EN_TOKEN = /^[A-Za-z][A-Za-z'’\-.]*$/;
+
+function tryParse(raw){
+  if(raw.length < 2) return null;
+  // 找到第一个含中文的 token，其后的全部归为中文释义；
+  // 之前的英文 token 一律拼接为单词/词组（词性标签可选，可穿插）
+  const cnStart = raw.findIndex(t => HAS_CJK.test(t));
+  if(cnStart < 0) return null;
+  const cn = raw.slice(cnStart).join(' ');
+  let pos = '';
+  const enTokens = [];
+  for(const t of raw.slice(0, cnStart)){
+    if(POS_TAGS.has(t.toLowerCase()) && !pos){
+      pos = t;                       // 词性标签
+    } else if(IS_EN_TOKEN.test(t)){
+      enTokens.push(t);              // 普通英文单词（词组中的一个词）
+    } else {
+      return null;                   // 无法识别的 token
+    }
+  }
+  if(!enTokens.length) return null;
+  return { id: Date.now() + '_' + Math.random().toString(36).slice(2,7),
+           en: enTokens.join(' '), pos, cn, streak:0 };
+}
+
+function parseLine(line){
+  line = line.trim();
+  if(!line) return null;
+  const clean = arr => arr.map(s=>s.trim()).filter(Boolean);
+  // 优先尝试 逗号 / 制表符 / 多空格 分隔；失败则回退按空白切分
+  // （兼容释义中含半角逗号的情况，如 "feasible adj. 可行的, 行得通的"）
+  return tryParse(clean(line.split(/[\t,，]| {2,}/)))
+      || tryParse(clean(line.split(/\s+/)));
+}
+
+/* ================= 界面层 ================= */
+const $ = s => document.querySelector(s);
+const toast = (msg, red) => {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (red ? ' red' : '');
+  clearTimeout(t._tm);
+  t._tm = setTimeout(()=> t.classList.remove('show'), 2200);
+};
+
+function refreshStats(){
+  $('#statCount').textContent = words.length;
+  $('#statMastered').textContent = masteredCount;
+  $('#setN').value = N;
+  $('#toggleBlockCN').checked = blockCN;
+  $('#footTime').textContent = new Date().toLocaleDateString('zh-CN');
+}
+
+function renderDict(){
+  const box = $('#dictList');
+  if(!words.length){
+    box.innerHTML = '<div class="empty">— 词库为空 · 请先导入单词 —</div>';
+    return;
+  }
+  box.innerHTML = words.map((w,i)=>`
+    <div class="dict-row">
+      <div class="hide-m" style="color:var(--grey);font-size:12px;">${String(i+1).padStart(3,'0')}</div>
+      <div class="en">${esc(w.en)}</div>
+      <div class="pos">${esc(w.pos)}</div>
+      <div>${esc(w.cn)}</div>
+      <div class="hide-m" style="font-size:12px;font-weight:700;color:${w.streak>0?'var(--red)':'var(--grey)'};">${w.streak} / ${N}</div>
+      <div class="hide-m"><div class="streakbar"><i style="width:${Math.min(100, w.streak/N*100)}%"></i></div></div>
+      <button class="del" data-id="${w.id}" title="删除">×</button>
+    </div>`).join('');
+  box.querySelectorAll('.del').forEach(b=>{
+    b.onclick = ()=>{ words = words.filter(w=>w.id!==b.dataset.id); save(); renderDict(); refreshStats(); };
+  });
+}
+const esc = s => String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---- 标签页 ---- */
+document.querySelectorAll('nav button').forEach(btn=>{
+  btn.onclick = ()=>{
+    document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('section').forEach(s=>s.classList.remove('show'));
+    $('#tab-'+btn.dataset.tab).classList.add('show');
+    if(btn.dataset.tab==='review') renderReviewSetup();
+  };
+});
+
+/* ---- 导入 ---- */
+function doImport(text){
+  const lines = text.split(/\r?\n/);
+  let ok = 0, bad = 0;
+  lines.forEach(l=>{
+    if(!l.trim()) return;
+    const p = parseLine(l);
+    if(p){
+      // 去重：英文+中文相同则跳过
+      if(!words.some(w=>w.en.toLowerCase()===p.en.toLowerCase() && w.cn===p.cn)) words.push(p);
+      ok++;
+    } else bad++;
+  });
+  save(); renderDict(); refreshStats();
+  $('#importMsg').textContent = `已导入 ${ok} 条${bad?`，跳过 ${bad} 条格式错误`:''}`;
+  toast(`已导入 ${ok} 条`, bad>0);
+}
+$('#btnImport').onclick = ()=>{ doImport($('#bulkText').value); $('#bulkText').value=''; };
+$('#fileInput').onchange = e=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  const r = new FileReader();
+  r.onload = ()=> doImport(String(r.result));
+  r.readAsText(f);
+  e.target.value = '';
+};
+$('#btnExport').onclick = ()=>{
+  const txt = words.map(w=>[w.en, w.pos, w.cn].filter(Boolean).join(' ')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([txt], {type:'text/plain'}));
+  a.download = 'wortschatz_words.txt';
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+$('#btnClearAll').onclick = ()=>{
+  if(!words.length) return;
+  if(confirm('确定清空整个词库？该操作不可撤销。')){
+    words = []; save(); renderDict(); refreshStats(); toast('词库已清空', true);
+  }
+};
+
+/* ---- 设置 ---- */
+$('#toggleBlockCN').onchange = e=>{
+  blockCN = e.target.checked;
+  save();
+  toast(blockCN ? '已开启：英文作答屏蔽中文' : '已关闭屏蔽');
+};
+
+$('#btnSaveN').onclick = ()=>{
+  const v = parseInt($('#setN').value, 10);
+  if(v>=1 && v<=99){ N = v; save(); refreshStats(); renderDict(); toast('设置已保存'); }
+  else toast('N 需在 1–99 之间', true);
+};
+
+/* ================= 复习逻辑 ================= */
+let session = null; // {queue:[wordIds], idx, answered, pendingResult}
+const norm = s => s.toLowerCase().replace(/[\s,，.。;；!！?？'’"“”]/g,'').trim();
+
+function pickBatch(count){
+  const pool = [...words];
+  //  Fisher–Yates 洗牌取前 count
+  for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+  return pool.slice(0, Math.min(count, pool.length));
+}
+
+function renderReviewSetup(){
+  const st = $('#reviewStage');
+  if(!words.length){
+    st.innerHTML = '<div class="empty">— 词库为空，请先在「词库」页导入单词 —</div>';
+    return;
+  }
+  st.innerHTML = `
+    <div class="review-setup">
+      <div class="q-meta"><span>Lernen / 复习</span><span>词库 ${words.length} 词</span></div>
+      <h2 style="margin-top:24px;">本轮复习数量</h2>
+      <p class="small">随机抽取指定数量的词条，随机显示英文（填中文）或中文（填英文）。连续答对 ${N} 次的词条将被自动删除。</p>
+      <div class="row" style="margin-top:24px;gap:0;">
+        <input type="number" id="revCount" min="1" max="${words.length}" value="${Math.min(10, words.length)}"
+               style="width:130px;font-size:28px;font-weight:700;text-align:center;padding:10px;border-right:none;">
+        <button class="btn" id="btnStart" style="padding:16px 34px;">开始 Start</button>
+      </div>
+    </div>`;
+  $('#btnStart').onclick = startSession;
+}
+
+function startSession(){
+  const count = parseInt($('#revCount').value, 10) || 1;
+  const batch = pickBatch(count);
+  if(!batch.length) return;
+  session = { queue: batch, idx: 0, total: batch.length, result: null, dir: null };
+  renderQuestion();
+}
+
+function renderQuestion(){
+  const w = session.queue[session.idx];
+  // 答完上一题、上一题答对且已掌握删除时，队列元素可能已移除——此处 w 为引用，仍存在
+  session.dir = Math.random() < 0.5 ? 'en2cn' : 'cn2en';
+  const showEn = session.dir === 'en2cn';
+  const st = $('#reviewStage');
+  st.innerHTML = `
+    <div class="qcard">
+      <div class="q-meta">
+        <span>${session.idx+1} / ${session.total}</span>
+        <span>${showEn ? '看英文 · 填中文' : '看中文 · 填英文'}</span>
+        <span style="color:var(--red);">连对 ${w.streak} / ${N}</span>
+      </div>
+      <div class="q-prompt">${showEn ? 'ENGLISH → 中文释义' : '中文释义 → ENGLISH'}</div>
+      <div class="q-word">${showEn ? esc(w.en) : esc(w.cn)}${showEn && w.pos ? `<span class="pos-inline">${esc(w.pos)}</span>` : ''}</div>
+      <div class="q-input">
+        <input type="text" id="ansInput" autocomplete="off" autocapitalize="off" spellcheck="false"
+               placeholder="${showEn ? '输入中文释义…' : '输入英文单词…'}">
+        <button class="btn" id="btnCheck">确定</button>
+      </div>
+      <div class="q-feedback" id="feedback"></div>
+      <div class="q-progress">${Array.from({length:N},(_,i)=>`<i class="${i<w.streak?'done':''}"></i>`).join('')}</div>
+    </div>`;
+  const inp = $('#ansInput');
+  inp.focus();
+  inp.onkeydown = e=>{ if(e.key==='Enter'){ if(session.result) nextStep(); else checkAnswer(); } };
+  // 「看中文 · 填英文」时屏蔽中文输入（IME 组词过程与粘贴均拦截）
+  if(!showEn && blockCN){
+    inp.setAttribute('inputmode','latin');
+    inp.setAttribute('lang','en');
+    let composing = false;
+    const CJK_G = new RegExp(HAS_CJK.source, 'g');
+    const strip = ()=>{
+      const v = inp.value;
+      const clean = v.replace(CJK_G, '');
+      if(clean !== v) inp.value = clean;
+    };
+    inp.addEventListener('compositionstart', ()=>{ composing = true; });
+    inp.addEventListener('compositionend',   ()=>{ composing = false; strip(); });
+    inp.addEventListener('input', ()=>{ if(!composing) strip(); });
+  }
+  $('#btnCheck').onclick = ()=>{ if(session.result) nextStep(); else checkAnswer(); };
+}
+
+function checkAnswer(){
+  const w = session.queue[session.idx];
+  const inp = $('#ansInput');
+  const user = inp.value;
+  if(!user.trim()) return;
+  const target = session.dir === 'en2cn' ? w.cn : w.en;
+  const ok = norm(user) === norm(target);
+  const fb = $('#feedback');
+  if(ok){
+    w.streak++;
+    let masteredNow = false;
+    if(w.streak >= N){
+      // 删除已掌握词条
+      words = words.filter(x=>x.id!==w.id);
+      masteredCount++;
+      masteredNow = true;
+    }
+    session.result = { ok:true, mastered:masteredNow };
+    save(); refreshStats();
+    fb.className = 'q-feedback ok';
+    fb.textContent = masteredNow
+      ? `✓ 正确！已连续答对 ${N} 次 —— 「${w.en}」已掌握，从词库删除。`
+      : `✓ 正确！连对 ${w.streak} / ${N}`;
+  } else {
+    w.streak = 0;
+    session.result = { ok:false, answer: target };
+    save();
+    fb.className = 'q-feedback bad';
+    fb.innerHTML = `✕ 错误。正确${session.dir==='en2cn'?'释义':'单词'}：<b>${esc(target)}</b>　（连对已清零）`;
+  }
+  inp.readOnly = true;   // 只读但保留焦点，回车可继续触发 nextStep
+  $('#btnCheck').textContent = '继续 →';
+  inp.focus();
+  renderDict();
+}
+
+function nextStep(){
+  session.result = null;
+  session.idx++;
+  if(session.idx >= session.total){
+    endSession();
+  } else {
+    renderQuestion();
+  }
+}
+
+function endSession(){
+  const st = $('#reviewStage');
+  const remain = words.length;
+  st.innerHTML = `
+    <div class="qcard" style="text-align:center;">
+      <div class="q-prompt" style="margin-bottom:16px;">Fertig / 本轮完成</div>
+      <div class="q-word" style="font-size:clamp(40px,8vw,80px);">Fertig<span style="color:var(--red);">.</span></div>
+      <p class="small" style="margin:24px auto 0;text-align:center;">
+        本轮复习 ${session.total} 词 · 词库剩余 ${remain} 词 · 累计掌握 ${masteredCount} 词
+      </p>
+      <div class="row" style="justify-content:center;margin-top:32px;">
+        <button class="btn" id="btnAgain">再来一轮</button>
+        <button class="btn ghost" id="btnToDict">查看词库</button>
+      </div>
+    </div>`;
+  $('#btnAgain').onclick = renderReviewSetup;
+  $('#btnToDict').onclick = ()=> document.querySelector('nav button[data-tab=dict]').click();
+}
+
+/* ================= 启动 ================= */
+refreshStats();
+renderDict();
+</script>
+</body>
+</html>
